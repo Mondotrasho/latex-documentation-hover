@@ -186,11 +186,11 @@ Install:
 
 Windows:
 
-    code.cmd --install-extension latex-documentation-hover-0.0.2.vsix --force
+    code.cmd --install-extension latex-documentation-hover-0.0.3.vsix --force
 
 macOS/Linux:
 
-    code --install-extension ./latex-documentation-hover-0.0.2.vsix --force
+    code --install-extension ./latex-documentation-hover-0.0.3.vsix --force
 
 Reload VS Code.
 
