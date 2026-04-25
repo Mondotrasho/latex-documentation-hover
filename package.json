@@ -2,7 +2,7 @@
   "name": "latex-documentation-hover",
   "displayName": "LaTeX Documentation Hover",
   "description": "Shows hover documentation for custom LaTeX macros from comments in .tex files.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "local",
   "author": "Mondotrasho",
   "license": "MIT",
