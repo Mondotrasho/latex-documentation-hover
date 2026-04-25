@@ -1,0 +1,72 @@
+{
+  "scopeName": "latex.documentation-hover",
+  "injectionSelector": "L:text.tex.latex",
+  "patterns": [
+    {
+      "name": "comment.line.percentage.latex.documentation-hover.boundary",
+      "match": "(%\\s*)(@hover|@endhover)",
+      "captures": {
+        "1": { "name": "punctuation.definition.comment.latex" },
+        "2": { "name": "keyword.control.documentation-hover" }
+      }
+    },
+    {
+      "name": "comment.line.percentage.latex.documentation-hover.command",
+      "match": "(%\\s*)(@command)\\s+(\\\\[A-Za-z@]+)",
+      "captures": {
+        "1": { "name": "punctuation.definition.comment.latex" },
+        "2": { "name": "keyword.other.documentation-hover" },
+        "3": { "name": "entity.name.function.latex.documentation-hover" }
+      }
+    },
+    {
+      "name": "comment.line.percentage.latex.documentation-hover.scope",
+      "match": "(%\\s*)(@scope)\\s+(workspace|file|files=[^\\s]+)",
+      "captures": {
+        "1": { "name": "punctuation.definition.comment.latex" },
+        "2": { "name": "keyword.other.documentation-hover" },
+        "3": { "name": "storage.modifier.documentation-hover" }
+      }
+    },
+    {
+      "name": "comment.line.percentage.latex.documentation-hover.signature",
+      "match": "(%\\s*)(@signature)\\s+(.+)$",
+      "captures": {
+        "1": { "name": "punctuation.definition.comment.latex" },
+        "2": { "name": "keyword.other.documentation-hover" },
+        "3": { "name": "markup.inline.raw.latex.documentation-hover" }
+      }
+    },
+    {
+      "name": "comment.line.percentage.latex.documentation-hover.description",
+      "match": "(%\\s*)(@description)\\s+(.+)$",
+      "captures": {
+        "1": { "name": "punctuation.definition.comment.latex" },
+        "2": { "name": "keyword.other.documentation-hover" },
+        "3": { "name": "string.unquoted.documentation-hover" }
+      }
+    },
+    {
+      "name": "comment.line.percentage.latex.documentation-hover.param",
+      "match": "(%\\s*)(@param)\\s+([A-Za-z0-9_-]+)\\s+(default=)(\"[^\"]*\"|\\S+)\\s*(.*)$",
+      "captures": {
+        "1": { "name": "punctuation.definition.comment.latex" },
+        "2": { "name": "keyword.other.documentation-hover" },
+        "3": { "name": "variable.parameter.documentation-hover" },
+        "4": { "name": "storage.type.documentation-hover" },
+        "5": { "name": "constant.language.documentation-hover" },
+        "6": { "name": "string.unquoted.documentation-hover" }
+      }
+    },
+    {
+      "name": "comment.line.percentage.latex.documentation-hover.param.no-default",
+      "match": "(%\\s*)(@param)\\s+([A-Za-z0-9_-]+)\\s+(.+)$",
+      "captures": {
+        "1": { "name": "punctuation.definition.comment.latex" },
+        "2": { "name": "keyword.other.documentation-hover" },
+        "3": { "name": "variable.parameter.documentation-hover" },
+        "4": { "name": "string.unquoted.documentation-hover" }
+      }
+    }
+  ]
+}

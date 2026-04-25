@@ -1,11 +1,12 @@
 {
   "name": "latex-documentation-hover",
   "displayName": "LaTeX Documentation Hover",
-  "description": "Shows hover documentation for custom LaTeX macros from macro-docs.json.",
-  "version": "0.0.1",
+  "description": "Shows hover documentation for custom LaTeX macros from comments in .tex files.",
+  "version": "0.0.2",
   "publisher": "local",
   "author": "Mondotrasho",
   "license": "MIT",
+  "icon": "images/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/Mondotrasho/latex-documentation-hover.git"
@@ -19,6 +20,28 @@
   "activationEvents": [
     "onLanguage:latex"
   ],
-  "main": "./extension.js",
-  "contributes": {}
+  "contributes": {
+  "commands": [
+    {
+      "command": "latex-documentation-hover.generateMacroDocs",
+      "title": "LaTeX Documentation Hover: Generate docs.json"
+    }
+  ],
+  "grammars": [
+    {
+      "scopeName": "latex.documentation-hover",
+      "path": "./syntaxes/latex-documentation-hover.tmLanguage.json",
+      "injectTo": [
+        "text.tex.latex"
+      ]
+    }
+  ],
+  "snippets": [
+    {
+      "language": "latex",
+      "path": "./snippets/latex-documentation-hover.code-snippets"
+    }
+  ]
+},
+  "main": "./extension.js"
 }

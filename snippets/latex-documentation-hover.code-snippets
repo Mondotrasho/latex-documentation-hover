@@ -1,0 +1,16 @@
+{
+  "Documentation Hover Block": {
+    "scope": "latex",
+    "prefix": "@hover",
+    "body": [
+      "% @hover",
+      "% @command ${1:\\\\MacroName}",
+      "% @scope ${2|workspace,file|}",
+      "% @signature ${3:\\\\MacroName{arg}}",
+      "% @description ${4:Describe what this macro does.}",
+      "% @param ${5:param-name} default=${6:value} ${7:Describe this parameter.}",
+      "% @endhover"
+    ],
+    "description": "Insert a LaTeX Documentation Hover block"
+  }
+}

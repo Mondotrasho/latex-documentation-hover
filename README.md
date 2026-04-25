@@ -1,123 +1,222 @@
 # LaTeX Documentation Hover
 
-Adds hover documentation for custom LaTeX macros using a simple JSON file.
+Automatically generates hover documentation for your LaTeX macros from comments in your `.tex` files.
+
+Write documentation once in your LaTeX file, save, and hover just works.
 
 Hover over a macro like:
 
-\PlacePointerArrow
+`\DrawPoint`
 
 and see:
-- full signature
-- description
-- parameter table with defaults
+- full signature  
+- description  
+- parameter table (with defaults when provided)  
 
-![alt text](<images/example hover.gif>)
-
----
-
-## How it works
-
-The extension looks for a file in your workspace root:
-
-macro-docs.json
-
-It matches LaTeX commands, such as \PlacePointerArrow, to entries in that file and displays them on hover.
+![Hover example](images/example_hover.gif)
 
 ---
 
-## Example macro-docs.json
-```json
-{
-  "\\PlacePointerArrow": {
-    "signature": "\\PlacePointerArrow{from=...,to=...,color=...,track=...,style=...,note=...,notepos=...}",
-    "description": "Draws a routed pointer arrow between memory cells.",
-    "params": {
-      "from": { "default": "0", "desc": "Source cell index." },
-      "to": { "default": "1", "desc": "Target cell index." },
-      "color": { "default": "ptrAarrow", "desc": "TikZ colour used for the arrow." },
-      "track": { "default": "0", "desc": "Routing lane number." },
-      "style": { "default": "flatarc", "desc": "Arrow route style." },
-      "note": { "default": "", "desc": "Optional label shown on the arrow." },
-      "notepos": { "default": "0.5", "desc": "Position of the note along the arrow from 0 to 1." }
-    }
-  }
+## Core idea
+
+The workflow is simple:
+
+1. Write documentation using special comments  
+2. Save the `.tex` file  
+3. Hover immediately works  
+
+No manual JSON editing. No extra steps.
+
+---
+
+## What it does
+
+This extension:
+
+- parses structured comment blocks in your LaTeX files  
+- generates documentation automatically  
+- stores it in `.documentation-hover/docs.json`  
+- shows that documentation on hover  
+- highlights the documentation blocks for readability  
+
+Built for personal use, but useful for any project with custom macros.
+
+Tested alongside **LaTeX Workshop**.
+
+Note: disabling LaTeX Workshop command hover is optional and only avoids duplicate hover sections.
+
+---
+
+## Writing documentation
+
+Add a block above your macro:
+
+<pre>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@hover</span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@command</span> <span style="color:#268bd2">\DrawVector</span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@scope</span> <span style="color:#ffffff">workspace</span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@signature</span> <span style="color:#268bd2">\DrawVector{x coordinate}{y coordinate}{label}</span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@description</span> <span style="color:#2aa198"><em>Draws a labelled point in a simple coordinate diagram.</em></span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@param</span> <span style="color:#839496"><em>x-coordinate</em></span> <span style="color:#ffffff"><strong>default=0</strong></span> <span style="color:#2aa198"><em>Horizontal coordinate.</em></span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@param</span> <span style="color:#839496"><em>y-coordinate</em></span> <span style="color:#ffffff"><strong>default=0</strong></span> <span style="color:#2aa198"><em>Vertical coordinate.</em></span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@param</span> <span style="color:#839496"><em>label</em></span> <span style="color:#ffffff"><strong>default=P</strong></span> <span style="color:#2aa198"><em>Point label.</em></span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@endhover</span>
+<span style="color:#268bd2">\newcommand</span>{<span style="color:#268bd2">\DrawPoint</span>}[3]{%
+  <span style="color:#586e75">% ..... SOME LATEX</span>
 }
+</pre>
+
+Save the file. That’s it.
+
+The `@scope` line controls where the hover entry is active.
+
+Supported scopes:
+
+- `workspace` - available in all `.tex` files in the current workspace
+- `file` - only available in the file where the documentation block was found
+- `files=one.tex,two.tex` - only available in the listed files
+
+Examples:
+
+<pre>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@scope</span> <span style="color:#ffffff">workspace</span>
+</pre>
+
+<pre>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@scope</span> <span style="color:#ffffff">file</span>
+</pre>
+
+<pre>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@scope</span> <span style="color:#ffffff">files=main.tex,diagrams.tex</span>
+</pre>
+
+
+For most shared macros, use `workspace`. For one-off macros inside a single document, use `file`.
+
+---
+
+## Example
+
+<pre>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@hover</span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@command</span> <span style="color:#268bd2">\DrawVector</span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@scope</span> <span style="color:#ffffff">workspace</span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@signature</span> <span style="color:#268bd2">\DrawVector{start point}{end point}{label}</span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@description</span> <span style="color:#2aa198"><em>Draws a labelled vector arrow between two points in a TikZ diagram.</em></span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@param</span> <span style="color:#839496"><em>start-point</em></span> <span style="color:#2aa198"><em>Starting coordinate, such as (0,0).</em></span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@param</span> <span style="color:#839496"><em>end-point</em></span> <span style="color:#2aa198"><em>Ending coordinate, such as (2,1).</em></span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@param</span> <span style="color:#839496"><em>label</em></span> <span style="color:#2aa198"><em>Text shown beside the vector.</em></span>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@endhover</span>
+<span style="color:#268bd2">\newcommand</span>{<span style="color:#268bd2">\DrawVector</span>}[3]{%
+  <span style="color:#586e75">% Demo macro body only</span>
+}
+</pre>
+
+---
+
+## Generated output
+
+The extension creates:
+
+    .documentation-hover/docs.json
+
+Example:
+
+```json
+    {
+      "\\DrawVector": {
+        "signature": "\\DrawVector{start}{end}{label}",
+        "description": "Draws a vector arrow from one point to another.",
+        "params": {
+          "start": { "desc": "Starting coordinate, e.g. (0,0)" },
+          "end": { "desc": "Ending coordinate, e.g. (2,1)" },
+          "label": { "default": "\\vec{v}", "desc": "Label shown next to the arrow" }
+        }
+      }
+    }
 ```
+You never need to edit this file manually.
+
+---
+
+## Syntax highlighting
+
+Documentation blocks are highlighted for readability:
+
+- `@hover`, `@command`, `@param`, etc  
+- macro names  
+- parameter names  
+- default values  
+- descriptions  
+
+---
+
+## Function highlighting in descriptions
+
+You can highlight functions inline:
+
+<pre>
+<span style="color:#586e75">% </span><span style="color:#b5bd00">@description</span> <span style="color:#2aa198"><em>In normal use, call {@fn \DrawPoint} instead.</em></span>
+</pre>
+
+This renders as inline code in the hover.
 
 ---
 
 ## Usage
 
-1. Install the extension
-2. Add macro-docs.json to your workspace root
-3. Open a .tex file
-4. Hover over your macro
+1. Install the extension  
+2. Open a workspace  
+3. Add `@hover` blocks  
+4. Save  
+
+Hover works immediately.
 
 ---
 
-## Generating macro-docs.json from LaTeX
-WIP NEED TO EXTEND
+## Build and install from GitHub
 
-This extension is designed to work with a workflow where LaTeX generates documentation automatically.
+    git clone https://github.com/Mondotrasho/latex-documentation-hover.git
+    cd latex-documentation-hover
+    npm install -g @vscode/vsce
+    vsce package
 
-### Concept
+Install:
 
-Define your macros with structured documentation:
+Windows:
 
-\MacroDoc{
-  command={\PlacePointerArrow},
-  signature={\PlacePointerArrow{from=...,to=...,color=...,track=...,style=...,note=...,notepos=...}},
-  description={Draws a routed pointer arrow between memory cells.},
-  params={
-    {from}{0}{Source cell index.},
-    {to}{1}{Target cell index.},
-    {color}{ptrAarrow}{TikZ colour used for the arrow.},
-    {track}{0}{Routing lane number.},
-    {style}{flatarc}{Arrow route style.},
-    {note}{}{Optional label shown on the arrow.},
-    {notepos}{0.5}{Position of the note along the arrow from 0 to 1.}
-  }
-}
+    code --install-extension latex-documentation-hover-0.0.1.vsix --force
 
-Then during compilation:
+macOS/Linux:
 
-\newwrite\macrojson
-\immediate\openout\macrojson=macro-docs.json
+    code --install-extension ./latex-documentation-hover-0.0.1.vsix --force
 
-Write JSON lines using \write, then close at \AtEndDocument.
+Reload VS Code.
 
 ---
 
-## Optional: LaTeX Workshop integration
+## Install through VS Code UI
 
-You can automate generation and syncing using a custom LaTeX Workshop tool.
-
-Example idea:
-
-{
-  "name": "latexmk + docs",
-  "tools": [
-    "xelatexmk",
-    "sync-macro-docs"
-  ]
-}
-
-Where sync-macro-docs ensures:
-- macro-docs.json is written to the workspace root
-- it stays in sync with your LaTeX source
+1. Open Extensions  
+2. Click `...`  
+3. Install from VSIX  
+4. Select the `.vsix`  
+5. Reload  
 
 ---
 
 ## Notes
 
-- The JSON file is read on every hover, so no restart is needed
-- Works with any custom macros
-- Designed to pair with VS Code snippets for full authoring support
+- Updates automatically on save  
+- No manual JSON editing  
+- Works with any macros  
+- Designed for a fast workflow  
 
 ---
 
 ## Future ideas
 
-- linting invalid macro parameters
-- signature validation
-- snippet auto-generation
+- linting invalid macro parameters  
+- signature validation  
+- snippet auto-generation  
+- support beyond LaTeX
