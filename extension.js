@@ -57,14 +57,17 @@ function makeRelativeToWorkspace(filePath) {
  * Load macro documentation from the current workspace.
  *
  * Expected file location:
-*   <workspace root>/.documentation-hover/docs.json
+ *   <workspace root>/.documentation-hover/docs.json
  *
  * The file should map LaTeX command names to documentation entries, e.g.
  * {
  *   "\\PlacePointerArrow": {
  *     "signature": "...",
  *     "description": "...",
- *     "params": { ... }
+ *     "warnings": [...],
+ *     "examples": [...],
+ *     "params": { ... },
+ *     "keys": { ... }
  *   }
  * }
  */
@@ -125,19 +128,27 @@ function scopeMatches(entry, document) {
 }
 
 /**
- * Parse one @param documentation line.
+ * Parse one named documentation line.
  *
- * Expected format:
+ * This is shared by @param and @key because both use the same shape:
+ *
+ * With default:
  *   % @param name default=value Description text here.
+ *   % @key color default=black Arrow colour.
  *
- * Examples:
- *   % @param from default=0 Source cell index.
- *   % @param note default="" Optional label shown on the arrow.
+ * Without default:
+ *   % @param name Description text here.
+ *   % @key note Optional note text.
+ *
+ * Quoted defaults are supported:
+ *   % @key note default="" Optional label shown on the arrow.
  */
-function parseParam(line) {
-    // Format with default:
-    // % @param from default=0 Source cell index.
-    let match = line.match(/^%\s*@param\s+(\S+)\s+default=(?:"([^"]*)"|(\S+))\s*(.*)$/);
+function parseNamedDocLine(line, tagName) {
+    const reWithDefault = new RegExp(
+        `^%\\s*@${tagName}\\s+(\\S+)\\s+default=(?:"([^"]*)"|(\\S+))\\s*(.*)$`
+    );
+
+    let match = line.match(reWithDefault);
 
     if (match) {
         return {
@@ -147,9 +158,8 @@ function parseParam(line) {
         };
     }
 
-    // Format without default:
-    // % @param from Source cell index.
-    match = line.match(/^%\s*@param\s+(\S+)\s+(.+)$/);
+    const reWithoutDefault = new RegExp(`^%\\s*@${tagName}\\s+(\\S+)\\s+(.+)$`);
+    match = line.match(reWithoutDefault);
 
     if (match) {
         return {
@@ -163,17 +173,55 @@ function parseParam(line) {
 }
 
 /**
+ * Parse one @param documentation line.
+ *
+ * Expected formats:
+ *   % @param name default=value Description text here.
+ *   % @param name Description text here.
+ */
+function parseParam(line) {
+    return parseNamedDocLine(line, "param");
+}
+
+/**
+ * Parse one @key documentation line.
+ *
+ * This is for macros that take one key-value argument, e.g.
+ *   \PlacePointerArrow{from=1,to=5,track=1}
+ *
+ * Expected formats:
+ *   % @key from default=0 Source cell index.
+ *   % @key note Optional note text.
+ */
+function parseKey(line) {
+    return parseNamedDocLine(line, "key");
+}
+
+/**
  * Parse all LaTeX Hover documentation blocks in one .tex file.
  *
- * Expected block format:
+ * Supported block starts:
+ *   % @hover
+ *   % @doc
+ *   % @lh-doc
  *
- * % @lh-doc
- * % @command \PlacePointerArrow
- * % @scope workspace
- * % @signature \PlacePointerArrow{from=...,to=...}
- * % @description Draws a routed pointer arrow.
- * % @param from default=0 Source cell index.
- * % @end-lh-doc
+ * Supported block ends:
+ *   % @endhover
+ *   % @enddoc
+ *   % @end-lh-doc
+ *   % @end
+ *
+ * Supported lines:
+ *   % @command \PlacePointerArrow
+ *   % @scope workspace
+ *   % @scope file
+ *   % @scope files=one.tex,two.tex
+ *   % @signature \PlacePointerArrow{from=<cell>, to=<cell>}
+ *   % @description Draws a routed pointer arrow.
+ *   % @warning Must be called before \DrawMemoryRow.
+ *   % @example \PlacePointerArrow{from=1,to=5}
+ *   % @param arrow-spec Key-value arrow definition.
+ *   % @key from default=0 Source cell index.
  */
 function parseDocBlocks(text, sourceFile) {
     const docs = {};
@@ -193,7 +241,10 @@ function parseDocBlocks(text, sourceFile) {
                 scope: { type: "workspace" },
                 signature: "",
                 description: "",
-                params: {}
+                warnings: [],
+                examples: [],
+                params: {},
+                keys: {}
             };
             continue;
         }
@@ -211,7 +262,10 @@ function parseDocBlocks(text, sourceFile) {
                     scope: current.scope,
                     signature: current.signature,
                     description: current.description,
-                    params: current.params
+                    warnings: current.warnings,
+                    examples: current.examples,
+                    params: current.params,
+                    keys: current.keys
                 };
             }
 
@@ -223,8 +277,9 @@ function parseDocBlocks(text, sourceFile) {
         let match;
 
         // Command name used as the lookup key.
-        // Example:
+        // Examples:
         //   % @command \PlacePointerArrow
+        //   % @command \memory_arrow_parse:n
         match = trimmed.match(/^%\s*@command\s+(.+)$/);
         if (match) {
             current.command = match[1].trim();
@@ -232,16 +287,46 @@ function parseDocBlocks(text, sourceFile) {
         }
 
         // Signature shown at the top of the hover popup.
+        // Example:
+        //   % @signature \PlacePointerArrow{from=<cell>, to=<cell>, ...}
         match = trimmed.match(/^%\s*@signature\s+(.+)$/);
         if (match) {
             current.signature = match[1].trim();
             continue;
         }
 
-        // Short human-readable description.
+        // Human-readable description.
+        //
+        // Multiple @description lines are joined together with newlines.
+        // This lets longer descriptions stay readable in the .tex source.
         match = trimmed.match(/^%\s*@description\s+(.+)$/);
         if (match) {
-            current.description = match[1].trim();
+            const text = match[1].trim();
+
+            if (current.description) {
+                current.description += "\n" + text;
+            } else {
+                current.description = text;
+            }
+
+            continue;
+        }
+
+        // Warning lines shown in a separate Warnings section.
+        // Example:
+        //   % @warning Must be called before \DrawMemoryRow.
+        match = trimmed.match(/^%\s*@warning\s+(.+)$/);
+        if (match) {
+            current.warnings.push(match[1].trim());
+            continue;
+        }
+
+        // Example lines shown as LaTeX code blocks.
+        // Example:
+        //   % @example \PlacePointerArrow{from=1,to=5}
+        match = trimmed.match(/^%\s*@example\s+(.+)$/);
+        if (match) {
+            current.examples.push(match[1].trim());
             continue;
         }
 
@@ -279,6 +364,17 @@ function parseDocBlocks(text, sourceFile) {
                 default: param.default,
                 desc: param.desc
             };
+            continue;
+        }
+
+        // Key-value option documentation.
+        const key = parseKey(trimmed);
+        if (key) {
+            current.keys[key.name] = {
+                default: key.default,
+                desc: key.desc
+            };
+            continue;
         }
     }
 
@@ -286,7 +382,7 @@ function parseDocBlocks(text, sourceFile) {
 }
 
 /**
- * Generate .documentation-hover/docs.json from @lh-doc blocks
+ * Generate .documentation-hover/docs.json from documentation blocks
  * in all workspace .tex files.
  *
  * This is exposed as a VS Code command:
@@ -342,9 +438,8 @@ function escapeTableCell(value) {
  * Apply simple inline formatting to documentation text.
  *
  * Supported:
- *   `\MacroName`       inline code
- *   {\fn \MacroName}   inline code
  *   {@fn \MacroName}   inline code
+ *   {\fn \MacroName}   inline code
  */
 function formatDocText(text) {
     return String(text ?? "")
@@ -352,12 +447,119 @@ function formatDocText(text) {
 }
 
 /**
- * Check whether a param has a meaningful default.
+ * Check whether an item has a meaningful default.
  *
  * Empty string means "no default provided".
  */
-function hasDefault(param) {
-    return typeof param !== "string" && param.default !== undefined && param.default !== "";
+function hasDefault(item) {
+    return typeof item !== "string" && item.default !== undefined && item.default !== "";
+}
+
+/**
+ * Append parameter and key documentation as a single structured table.
+ *
+ * Params and Keys are rendered within one table so VS Code uses a shared
+ * column layout. This keeps the Description column aligned.
+ *
+ * Table behaviour:
+ * - If Params exist, the first column header is "Param"
+ * - If no Params exist, the first column header is "Key"
+ *
+ * When both Params and Keys exist:
+ * - Param rows are shown first
+ * - A header-style divider row is inserted for Keys
+ *   (Key | Default | Description)
+ * - Key rows follow
+ *
+ * The Default column is shared across the entire table:
+ * - shown if any Param or Key has a default
+ * - hidden if none have defaults
+ */
+function appendDocsTable(md, params, keys) {
+    const paramEntries = Object.entries(params || {});
+    const keyEntries = Object.entries(keys || {});
+
+    if (paramEntries.length === 0 && keyEntries.length === 0) {
+        return;
+    }
+
+    const allEntries = [...paramEntries, ...keyEntries];
+    const showDefaultColumn = allEntries.some(([, item]) => hasDefault(item));
+
+    const firstColumnName = paramEntries.length > 0 ? "Param" : "Key";
+
+    if (showDefaultColumn) {
+        md.appendMarkdown(`\n| ${firstColumnName} | Default | Description |\n|:------|:--------|:------------|\n`);
+    } else {
+        md.appendMarkdown(`\n| ${firstColumnName} | Description |\n|:------|:------------|\n`);
+    }
+
+    for (const [name, item] of paramEntries) {
+        appendDocRow(md, name, item, showDefaultColumn);
+    }
+
+    if (paramEntries.length > 0 && keyEntries.length > 0) {
+        if (showDefaultColumn) {
+            md.appendMarkdown("| **Key** | **Default** | **Description** |\n");
+        } else {
+            md.appendMarkdown("| **Key** | **Description** |\n");
+        }
+    }
+
+    for (const [name, item] of keyEntries) {
+        appendDocRow(md, name, item, showDefaultColumn);
+    }
+}
+
+function appendDocRow(md, name, item, showDefaultColumn) {
+    const desc = typeof item === "string"
+        ? escapeTableCell(formatDocText(item))
+        : escapeTableCell(formatDocText(item.desc || ""));
+
+    const def = typeof item === "string"
+        ? ""
+        : hasDefault(item)
+            ? `\`${escapeTableCell(item.default)}\``
+            : "";
+
+    if (showDefaultColumn) {
+        md.appendMarkdown(`| \`${escapeTableCell(name)}\` | ${def} | ${desc} |\n`);
+    } else {
+        md.appendMarkdown(`| \`${escapeTableCell(name)}\` | ${desc} |\n`);
+    }
+}
+
+/**
+ * Append one documentation table for either Params or Keys.
+ */
+function appendSingleDocTable(md, entries, nameColumn, showDefaultColumn) {
+    if (entries.length === 0) {
+        return;
+    }
+
+    if (showDefaultColumn) {
+        md.appendMarkdown(`\n| ${nameColumn} | Default | Description |\n|:------|:--------|:------------|\n`);
+    } else {
+        md.appendMarkdown(`\n| ${nameColumn} | Description |\n|:------|:------------|\n`);
+    }
+
+    for (const [name, item] of entries) {
+        const desc = typeof item === "string"
+            ? escapeTableCell(formatDocText(item))
+            : escapeTableCell(formatDocText(item.desc || ""));
+
+        const def = typeof item === "string"
+            ? ""
+            : hasDefault(item)
+                ? `\`${escapeTableCell(item.default)}\``
+                : "";
+
+        if (showDefaultColumn) {
+            md.appendMarkdown(`| \`${escapeTableCell(name)}\` | ${def} | ${desc} |\n`);
+        } else {
+            md.appendMarkdown(`| \`${escapeTableCell(name)}\` | ${desc} |\n`);
+        }
+    }
 }
 
 /**
@@ -374,47 +576,30 @@ function buildHover(entry, command) {
         md.appendMarkdown(`\n${formatDocText(entry.description)}\n`);
     }
 
-    // Optional parameter table.
+    // Optional warning section.
     //
-    // Supports two formats:
-    //
-    // 1. Simple string:
-    //    "from": "Source cell index."
-    //
-    // 2. Structured object:
-    //    "from": {
-    //      "default": "0",
-    //      "desc": "Source cell index."
-    //    }
-    if (entry.params) {
-        const params = Object.entries(entry.params);
-        const showDefaultColumn = params.some(([, param]) => hasDefault(param));
+    // VS Code hover markdown does not support custom CSS/background colours.
+    // A blockquote gives the warning a visibly different shaded style in most themes.
+    if (Array.isArray(entry.warnings) && entry.warnings.length > 0) {
+        //md.appendMarkdown("\n**Warnings**\n\n");
+        md.appendMarkdown("\n");
 
-        if (showDefaultColumn) {
-            md.appendMarkdown("\n| Param | Default | Description |\n|:------|:--------|:------------|\n");
-        } else {
-            md.appendMarkdown("\n| Param | Description |\n|:------|:------------|\n");
+        for (const warning of entry.warnings) {
+            md.appendMarkdown(`\n\`! ${escapeTableCell(formatDocText(warning))}\`\n`);
         }
+    }
 
-        for (const [name, param] of params) {
-            if (typeof param === "string") {
-                const desc = escapeTableCell(formatDocText(param));
+    // Optional parameter and key table.
+    appendDocsTable(md, entry.params, entry.keys);
 
-                if (showDefaultColumn) {
-                    md.appendMarkdown(`| \`${escapeTableCell(name)}\` |  | ${desc} |\n`);
-                } else {
-                    md.appendMarkdown(`| \`${escapeTableCell(name)}\` | ${desc} |\n`);
-                }
-            } else {
-                const desc = escapeTableCell(formatDocText(param.desc || ""));
-                const def = hasDefault(param) ? `\`${escapeTableCell(param.default)}\`` : "";
+    // Optional example section.
+    //
+    // Examples are rendered as code blocks so they are visually separate and easy to copy.
+    if (Array.isArray(entry.examples) && entry.examples.length > 0) {
+        md.appendMarkdown("\n**Examples**\n");
 
-                if (showDefaultColumn) {
-                    md.appendMarkdown(`| \`${escapeTableCell(name)}\` | ${def} | ${desc} |\n`);
-                } else {
-                    md.appendMarkdown(`| \`${escapeTableCell(name)}\` | ${desc} |\n`);
-                }
-            }
+        for (const example of entry.examples) {
+            md.appendCodeblock(example, "latex");
         }
     }
 
@@ -431,11 +616,12 @@ function activate(context) {
     const provider = vscode.languages.registerHoverProvider("latex", {
         provideHover(document, position) {
             // Find the LaTeX command under the cursor.
-            // This matches commands like:
+            // This now supports:
             //   \PlacePointerArrow
             //   \DrawMemoryRow
             //   \some@internal
-            const range = document.getWordRangeAtPosition(position, /\\[A-Za-z@]+/);
+            //   \memory_arrow_parse:n
+            const range = document.getWordRangeAtPosition(position, /\\[A-Za-z@:_]+/);
 
             // If the cursor is not over a LaTeX command, do not show anything.
             if (!range) {
@@ -445,7 +631,7 @@ function activate(context) {
             const command = document.getText(range);
 
             // Load the docs every hover.
-            // This keeps the extension simple and means changes to macro-docs.json
+            // This keeps the extension simple and means changes to docs.json
             // are picked up without restarting VS Code.
             const docs = loadDocs();
             const entry = docs[command];
@@ -465,16 +651,16 @@ function activate(context) {
         }
     });
 
-    // Command Palette command for manually generating macro-docs.json.
+    // Command Palette command for manually generating docs.json.
     const generateCommand = vscode.commands.registerCommand(
         "latex-documentation-hover.generateMacroDocs",
         generateMacroDocs
     );
 
-    // Automatically regenerate macro-docs.json whenever a LaTeX file is saved.
+    // Automatically regenerate docs.json whenever a LaTeX file is saved.
     //
     // This means the normal workflow becomes:
-    //   edit @lh-doc block
+    //   edit @hover block
     //   save .tex file
     //   hover docs update automatically
     const saveWatcher = vscode.workspace.onDidSaveTextDocument((document) => {

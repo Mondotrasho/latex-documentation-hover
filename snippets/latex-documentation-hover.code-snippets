@@ -8,7 +8,10 @@
       "% @scope ${2|workspace,file|}",
       "% @signature ${3:\\\\MacroName{arg}}",
       "% @description ${4:Describe what this macro does.}",
-      "% @param ${5:param-name} default=${6:value} ${7:Describe this parameter.}",
+      "% @warning ${5:Optional warning.}",
+      "% @example ${6:\\\\MacroName{value}}",
+      "% @param ${7:param-name} default=${8:value} ${9:Describe this parameter.}",
+      "% @key ${10:key-name} default=${11:value} ${12:Describe this key.}",
       "% @endhover"
     ],
     "description": "Insert a LaTeX Documentation Hover block"

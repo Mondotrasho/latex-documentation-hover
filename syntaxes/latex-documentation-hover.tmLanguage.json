@@ -12,7 +12,7 @@
     },
     {
       "name": "comment.line.percentage.latex.documentation-hover.command",
-      "match": "(%\\s*)(@command)\\s+(\\\\[A-Za-z@]+)",
+      "match": "(%\\s*)(@command)\\s+(\\\\[A-Za-z@:_]+)",
       "captures": {
         "1": { "name": "punctuation.definition.comment.latex" },
         "2": { "name": "keyword.other.documentation-hover" },
@@ -47,6 +47,24 @@
       }
     },
     {
+      "name": "comment.line.percentage.latex.documentation-hover.warning",
+      "match": "(%\\s*)(@warning)\\s+(.+)$",
+      "captures": {
+        "1": { "name": "punctuation.definition.comment.latex" },
+        "2": { "name": "keyword.other.documentation-hover" },
+        "3": { "name": "invalid.deprecated.documentation-hover" }
+      }
+    },
+    {
+      "name": "comment.line.percentage.latex.documentation-hover.example",
+      "match": "(%\\s*)(@example)\\s+(.+)$",
+      "captures": {
+        "1": { "name": "punctuation.definition.comment.latex" },
+        "2": { "name": "keyword.other.documentation-hover" },
+        "3": { "name": "markup.inline.raw.latex.documentation-hover" }
+      }
+    },
+    {
       "name": "comment.line.percentage.latex.documentation-hover.param",
       "match": "(%\\s*)(@param)\\s+([A-Za-z0-9_-]+)\\s+(default=)(\"[^\"]*\"|\\S+)\\s*(.*)$",
       "captures": {
@@ -65,6 +83,28 @@
         "1": { "name": "punctuation.definition.comment.latex" },
         "2": { "name": "keyword.other.documentation-hover" },
         "3": { "name": "variable.parameter.documentation-hover" },
+        "4": { "name": "string.unquoted.documentation-hover" }
+      }
+    },
+    {
+      "name": "comment.line.percentage.latex.documentation-hover.key",
+      "match": "(%\\s*)(@key)\\s+([A-Za-z0-9_-]+)\\s+(default=)(\"[^\"]*\"|\\S+)\\s*(.*)$",
+      "captures": {
+        "1": { "name": "punctuation.definition.comment.latex" },
+        "2": { "name": "keyword.other.documentation-hover" },
+        "3": { "name": "variable.other.member.documentation-hover" },
+        "4": { "name": "storage.type.documentation-hover" },
+        "5": { "name": "constant.language.documentation-hover" },
+        "6": { "name": "string.unquoted.documentation-hover" }
+      }
+    },
+    {
+      "name": "comment.line.percentage.latex.documentation-hover.key.no-default",
+      "match": "(%\\s*)(@key)\\s+([A-Za-z0-9_-]+)\\s+(.+)$",
+      "captures": {
+        "1": { "name": "punctuation.definition.comment.latex" },
+        "2": { "name": "keyword.other.documentation-hover" },
+        "3": { "name": "variable.other.member.documentation-hover" },
         "4": { "name": "string.unquoted.documentation-hover" }
       }
     }
