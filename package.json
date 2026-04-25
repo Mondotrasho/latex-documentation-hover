@@ -1,0 +1,24 @@
+{
+  "name": "latex-documentation-hover",
+  "displayName": "LaTeX Documentation Hover",
+  "description": "Shows hover documentation for custom LaTeX macros from macro-docs.json.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "author": "Mondotrasho",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Mondotrasho/latex-documentation-hover.git"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:latex"
+  ],
+  "main": "./extension.js",
+  "contributes": {}
+}
