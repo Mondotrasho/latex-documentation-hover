@@ -149,6 +149,7 @@ Documentation blocks are highlighted for readability:
 - default values  
 - descriptions  
 
+![alt text](images/comment_highlighting.png)
 ---
 
 ## Function highlighting in descriptions
