@@ -2,7 +2,7 @@
   "name": "latex-documentation-hover",
   "displayName": "LaTeX Documentation Hover",
   "description": "Shows hover documentation for custom LaTeX macros from comments in .tex files.",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "local",
   "author": "Mondotrasho",
   "license": "MIT",
@@ -21,27 +21,27 @@
     "onLanguage:latex"
   ],
   "contributes": {
-  "commands": [
-    {
-      "command": "latex-documentation-hover.generateMacroDocs",
-      "title": "LaTeX Documentation Hover: Generate docs.json"
-    }
-  ],
-  "grammars": [
-    {
-      "scopeName": "latex.documentation-hover",
-      "path": "./syntaxes/latex-documentation-hover.tmLanguage.json",
-      "injectTo": [
-        "text.tex.latex"
-      ]
-    }
-  ],
-  "snippets": [
-    {
-      "language": "latex",
-      "path": "./snippets/latex-documentation-hover.code-snippets"
-    }
-  ]
-},
+    "commands": [
+      {
+        "command": "latex-documentation-hover.generateMacroDocs",
+        "title": "LaTeX Documentation Hover: Generate docs.json"
+      }
+    ],
+    "grammars": [
+      {
+        "scopeName": "latex.documentation-hover",
+        "path": "./syntaxes/latex-documentation-hover.tmLanguage.json",
+        "injectTo": [
+          "text.tex.latex"
+        ]
+      }
+    ],
+    "snippets": [
+      {
+        "language": "latex",
+        "path": "./snippets/latex-documentation-hover.code-snippets"
+      }
+    ]
+  },
   "main": "./extension.js"
 }

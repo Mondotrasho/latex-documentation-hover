@@ -135,6 +135,8 @@ function scopeMatches(entry, document) {
  * With default:
  *   % @param name default=value Description text here.
  *   % @key color default=black Arrow colour.
+ *   % @key line width default=6.0pt Wire width.
+ *   % @key depart order default=xy Connector departure order.
  *
  * Without default:
  *   % @param name Description text here.
@@ -142,23 +144,59 @@ function scopeMatches(entry, document) {
  *
  * Quoted defaults are supported:
  *   % @key note default="" Optional label shown on the arrow.
+ *   % @key shorten <= default="4.8pt (\NanoWireEndLength)" Start shortening.
+ *
+ * When default= is present, the complete text between the tag and
+ * default= is treated as the name. This allows multiword TikZ keys.
+ *
+ * Without default=, a multiword name must be quoted:
+ *   % @key "line width" Width of the line.
  */
 function parseNamedDocLine(line, tagName) {
     const reWithDefault = new RegExp(
-        `^%\\s*@${tagName}\\s+(\\S+)\\s+default=(?:"([^"]*)"|(\\S+))\\s*(.*)$`
+        `^%\\s*@${tagName}\\s+(.+?)\\s+default=(?:"([^"]*)"|(\\S+))\\s*(.*)$`
     );
 
     let match = line.match(reWithDefault);
 
     if (match) {
+        let name = match[1].trim();
+
+        // Retain compatibility with older documentation that placed
+        // quotation marks around multiword parameter or key names.
+        if (
+            name.length >= 2 &&
+            name.startsWith('"') &&
+            name.endsWith('"')
+        ) {
+            name = name.slice(1, -1);
+        }
+
         return {
-            name: match[1],
+            name,
             default: match[2] ?? match[3] ?? "",
             desc: (match[4] ?? "").trim()
         };
     }
 
-    const reWithoutDefault = new RegExp(`^%\\s*@${tagName}\\s+(\\S+)\\s+(.+)$`);
+    const reQuotedWithoutDefault = new RegExp(
+        `^%\\s*@${tagName}\\s+"([^"]+)"\\s+(.+)$`
+    );
+
+    match = line.match(reQuotedWithoutDefault);
+
+    if (match) {
+        return {
+            name: match[1],
+            default: "",
+            desc: match[2].trim()
+        };
+    }
+
+    const reWithoutDefault = new RegExp(
+        `^%\\s*@${tagName}\\s+(\\S+)\\s+(.+)$`
+    );
+
     match = line.match(reWithoutDefault);
 
     if (match) {
@@ -413,7 +451,7 @@ async function generateMacroDocs() {
     if (!fs.existsSync(docsDir)) {
         fs.mkdirSync(docsDir, { recursive: true });
     }
-    
+
     const outPath = path.join(docsDir, DOCS_FILE);
 
     // JSON.stringify handles all the escaping that is annoying to do in LaTeX.
@@ -678,7 +716,7 @@ function activate(context) {
  * Called when the extension is deactivated.
  * Nothing needed here because subscriptions are cleaned up automatically.
  */
-function deactivate() {}
+function deactivate() { }
 
 module.exports = {
     activate,
